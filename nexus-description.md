@@ -48,9 +48,6 @@ Slay the Spire 2/
 [*]支持通过 JSON 配置文件自定义按键
 [/list]
 
-[size=5][b]源代码[/b][/size]
-[url=https://github.com/Masaicker/KeyboardQuickPlayMod-sts2]https://github.com/Masaicker/KeyboardQuickPlayMod-sts2[/url]
-
 [size=5][b]致谢[/b][/size]
 
 本项目基于 [url=https://github.com/Alchyr/ModTemplate-StS2]Alchyr/ModTemplate-StS2[/url] 模板创建。
@@ -109,9 +106,6 @@ Change the [b]QuickPlayButton[/b] value to rebind:
 [*]Uses the Harmony library for runtime patching
 [*]Supports custom key binding via JSON config file
 [/list]
-
-[size=5][b]Source Code[/b][/size]
-[url=https://github.com/Masaicker/KeyboardQuickPlayMod-sts2]https://github.com/Masaicker/KeyboardQuickPlayMod-sts2[/url]
 
 [size=5][b]Acknowledgments[/b][/size]
 
