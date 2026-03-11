@@ -11,7 +11,7 @@ namespace KeyboardQuickPlay;
 /// </summary>
 public static class TargetSelector
 {
-    private const bool DebugLog = false;
+    private static bool DebugLog = false;
     private static Creature _focusTarget;
 
     public static Creature GetBestTarget(CardModel card, TargetType targetType)
