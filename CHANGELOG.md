@@ -1,5 +1,9 @@
 # Changelog
 
+# v1.0.4
+* 修复随机目标类卡牌（如连续反弹）无法快速出牌的问题
+* Fix quick play not working for random-target cards (e.g. Ricochet)
+
 # v1.0.3
 * 修复部分玩家无法使用 MOD 的问题
 * 感谢玩家 Kishibukukuuuu 协助排查测试

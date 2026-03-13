@@ -70,6 +70,7 @@ public static class KeyboardCardPlayPatch
             TargetType.None => true,
             TargetType.Self => true,
             TargetType.AllEnemies => true,
+            TargetType.RandomEnemy => true,
             TargetType.AllAllies => true,
             TargetType.Osty => true,
             TargetType.AnyEnemy => true,
