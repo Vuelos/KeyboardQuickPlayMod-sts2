@@ -58,6 +58,10 @@ Slay the Spire 2/
 
 本项目遵循原游戏的 MOD 许可政策。
 
+[size=5][b]源代码[/b][/size]
+
+源代码托管于 [url=https://github.com/Masaicker/KeyboardQuickPlayMod-sts2]GitHub[/url]。
+
 
 [size=6][b]KeyboardQuickPlay[/b][/size]
 
@@ -118,3 +122,7 @@ Special thanks to player [url=https://www.nexusmods.com/profile/Kishibukukuuuu]K
 [size=5][b]License[/b][/size]
 
 This project follows the original game's modding policy.
+
+[size=5][b]Source Code[/b][/size]
+
+Source code hosted on [url=https://github.com/Masaicker/KeyboardQuickPlayMod-sts2]GitHub[/url].
