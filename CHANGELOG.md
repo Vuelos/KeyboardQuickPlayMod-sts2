@@ -1,5 +1,9 @@
 # Changelog
 
+# v1.0.5
+* 修复键盘结束回合后，长按快捷键无法继续自动出牌的问题
+* Fix auto-play not working after ending turn with keyboard while holding hotkey
+* 
 # v1.0.4
 * 修复随机目标类卡牌（如连续反弹）无法快速出牌的问题
 * 移除 MOD 封面
