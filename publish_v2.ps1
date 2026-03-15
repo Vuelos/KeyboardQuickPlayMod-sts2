@@ -9,7 +9,14 @@ $ModName = $csproj.BaseName
 
 $SteamRoot = (Get-ItemProperty "HKCU:\Software\Valve\Steam" -Name SteamPath).SteamPath
 $ModsDir = "$SteamRoot/steamapps/common/Slay the Spire 2/mods"
-$ManifestPath = [System.IO.Path]::GetFullPath("$ProjectDir/mod_manifest.json")
+
+# 兼容两种 manifest 格式：{项目名}.json（新）或 mod_manifest.json（旧）
+$ManifestPath = [System.IO.Path]::GetFullPath("$ProjectDir/$ModName.json")
+if (!(Test-Path $ManifestPath)) {
+    $ManifestPath = [System.IO.Path]::GetFullPath("$ProjectDir/mod_manifest.json")
+}
+if (!(Test-Path $ManifestPath)) { throw "manifest file not found ($ModName.json or mod_manifest.json)" }
+
 $ImageImportPath = [System.IO.Path]::GetFullPath("$ProjectDir/$ModName/mod_image.png.import")
 
 # 读取 manifest
@@ -126,29 +133,41 @@ try {
     # 3. 生成输出 manifest 并复制文件到 mods 目录
     $step++
     Write-Host "[$step/$totalSteps] Copying to mods folder..." -ForegroundColor Yellow
+
+    # 创建模组专用子目录
+    $ModTargetDir = "$ModsDir/$ModName"
     if (!(Test-Path $ModsDir)) { New-Item -ItemType Directory -Path $ModsDir | Out-Null }
+    if (!(Test-Path $ModTargetDir)) { New-Item -ItemType Directory -Path $ModTargetDir | Out-Null }
 
     # 动态生成 manifest：读取原始 JSON，替换 has_pck，去掉旧字段
     $jsonText = [System.IO.File]::ReadAllText($ManifestPath, [System.Text.Encoding]::UTF8)
     $jsonText = $jsonText -replace '"pck_name"\s*:\s*"[^"]*"\s*,?\s*\n?', ''
     $hasPckStr = if ($includePck) { 'true' } else { 'false' }
     $jsonText = $jsonText -replace '"has_pck"\s*:\s*(true|false)', "`"has_pck`": $hasPckStr"
-    [System.IO.File]::WriteAllText("$ModsDir/$ModId.json", $jsonText.Trim() + "`n", [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText("$ModTargetDir/$ModId.json", $jsonText.Trim() + "`n", [System.Text.Encoding]::UTF8)
 
     if ($hasDll) {
-        Copy-Item "$ProjectDir/bin/publish/$ModName.dll" "$ModsDir/$ModName.dll" -Force
+        Copy-Item "$ProjectDir/bin/publish/$ModName.dll" "$ModTargetDir/$ModName.dll" -Force
     }
     if ($includePck) {
-        Copy-Item $PckPath "$ModsDir/$ModName.pck" -Force
+        Copy-Item $PckPath "$ModTargetDir/$ModName.pck" -Force
         Remove-Item $PckPath -Force -ErrorAction SilentlyContinue
+    }
+    else {
+        # 删除 Godot 自动生成的 PCK（不选封面时）
+        $autoPckPath = "$ModTargetDir/$ModName.pck"
+        if (Test-Path $autoPckPath) {
+            Remove-Item $autoPckPath -Force
+            Write-Host "  Removed auto-generated PCK (no cover selected)" -ForegroundColor Gray
+        }
     }
 
     # 结果
     Write-Host ""
     Write-Host "=== Publish OK ===" -ForegroundColor Green
-    Write-Host "  JSON -> $ModsDir/$ModId.json"
-    if ($hasDll) { Write-Host "  DLL  -> $ModsDir/$ModName.dll" }
-    if ($includePck) { Write-Host "  PCK  -> $ModsDir/$ModName.pck ($pckSize bytes)" }
+    Write-Host "  JSON -> $ModTargetDir/$ModId.json"
+    if ($hasDll) { Write-Host "  DLL  -> $ModTargetDir/$ModName.dll" }
+    if ($includePck) { Write-Host "  PCK  -> $ModTargetDir/$ModName.pck ($pckSize bytes)" }
 }
 catch {
     Write-Host ""
