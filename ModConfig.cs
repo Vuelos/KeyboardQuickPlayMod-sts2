@@ -9,7 +9,7 @@ namespace KeyboardQuickPlay;
 public static class ModConfig
 {
     private const string ConfigDir = "mods/config";
-    private const string ConfigFile = "KeyboardQuickPlay.json";
+    private const string ConfigFile = "KeyboardQuickPlay.cfg";
 
     private static Key? _key;
     private static MouseButton? _mouseButton;
@@ -52,6 +52,23 @@ public static class ModConfig
         {
             var configDirPath = Path.Combine(gameDir, ConfigDir);
             var configFilePath = Path.Combine(configDirPath, ConfigFile);
+
+            // 兼容旧版：迁移或清理 .json 配置
+            var oldJsonPath = Path.Combine(configDirPath, "KeyboardQuickPlay.json");
+            if (File.Exists(oldJsonPath))
+            {
+                try
+                {
+                    if (!File.Exists(configFilePath))
+                        File.Move(oldJsonPath, configFilePath);
+                    else
+                        File.Delete(oldJsonPath);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Logger.Warn($"Config migration failed: {e.Message}");
+                }
+            }
 
             var config = ConfigData.Default;
 
