@@ -48,7 +48,7 @@ public static class TargetSelector
         _focusTarget = null;
     }
 
-    private static Creature GetEnemyTarget(CombatState combatState)
+    private static Creature GetEnemyTarget(ICombatState combatState)
     {
         var enemies = combatState.HittableEnemies;
         if (enemies.Count == 0) return null;
@@ -72,7 +72,7 @@ public static class TargetSelector
         return enemies.OrderBy(e => e.CurrentHp).First();
     }
 
-    private static Creature GetAllyTargetWithLowestHp(CardModel card, CombatState combatState)
+    private static Creature GetAllyTargetWithLowestHp(CardModel card, ICombatState combatState)
     {
         var owner = card.Owner.Creature;
         var allies = combatState.PlayerCreatures

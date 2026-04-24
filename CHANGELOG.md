@@ -1,5 +1,9 @@
 # Changelog
 
+# v1.0.8
+* 适配当前测试版 v0.104.0，修复快速出牌时可能出现的报错问题
+* Adapted to current beta v0.104.0 and fixed a possible error during quick play
+
 # v1.0.7
 * 优化项目构建配置
 * Update project build configuration
