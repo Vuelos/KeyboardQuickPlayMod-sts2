@@ -3,10 +3,10 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using KeyboardQuickPlay.Handlers;
 
-namespace KeyboardQuickPlay;
+namespace KeyboardQuickPlay.Patches;
 
 /// <summary>
 /// 键盘出牌处理 - Harmony Patch 处理空格/Enter 键快速出牌

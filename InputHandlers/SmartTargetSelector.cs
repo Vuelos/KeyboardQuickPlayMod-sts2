@@ -1,10 +1,9 @@
-using System.Linq;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 
-namespace KeyboardQuickPlay;
+namespace KeyboardQuickPlay.Handlers;
 
 /// <summary>
 /// 目标选择器 - 集火优先，血量最低兜底
