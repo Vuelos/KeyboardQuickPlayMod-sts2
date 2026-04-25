@@ -1,16 +1,21 @@
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Extensions;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
 
 namespace KeyboardQuickPlay.Handlers;
 
-/// <summary>
-/// 目标选择器 - 集火优先，血量最低兜底
-/// </summary>
 public static class TargetSelector
 {
+    public static Creature CurrentTarget => _focusTarget;
+    public static NCreature CurrentTargetNode => _focusNode;
+
     private static Creature _focusTarget;
+    private static NCreature _focusNode;
+    private static int _enemyIndex = 0;
 
     public static Creature GetBestTarget(CardModel card, TargetType targetType)
     {
@@ -25,49 +30,57 @@ public static class TargetSelector
         };
     }
 
-    /// <summary>
-    /// 记录集火目标（快速出牌和手动出牌都会调用）
-    /// </summary>
-    public static void RecordTarget(Creature target)
+    public static Creature SetTarget(Creature target)
     {
-        if (target == null) return;
-        var old = _focusTarget;
+        // Deselect old node
+        _focusNode?.HideSingleSelectReticle();
+
         _focusTarget = target;
-        if (ModConfig.DebugLog)
-            Plugin.Logger.Info($"[集火] 记录目标: {target.Name} (HP:{target.CurrentHp}/{target.MaxHp}) | 上一个: {(old != null ? old.Name : "无")}");
+        _focusNode = target != null
+            ? NCombatRoom.Instance?.CreatureNodes.FirstOrDefault(n => n.Entity == target)
+            : null;
+
+        // Select new node
+        _focusNode?.ShowSingleSelectReticle();
+
+        return _focusTarget;
     }
 
-    /// <summary>
-    /// 清空集火记录（新战斗时调用）
-    /// </summary>
+    public static Creature Cycle(IReadOnlyList<Creature> list)
+    {
+        if (list == null || list.Count == 0)
+            return null;
+
+        if (_focusTarget == null || !list.Contains(_focusTarget))
+            _enemyIndex = 0;
+        else
+            _enemyIndex = (list.IndexOf(_focusTarget) + 1) % list.Count;
+
+        // SetTarget handles show/hide
+        SetTarget(list[_enemyIndex]);
+        return _focusTarget;
+    }
+
     public static void Reset()
     {
-        if (ModConfig.DebugLog)
-            Plugin.Logger.Info($"[集火] 战斗开始/结束/重置时，清空目标! 之前: {(_focusTarget != null ? _focusTarget.Name : "无")}");
+        _focusNode?.HideSingleSelectReticle();
         _focusTarget = null;
+        _focusNode = null;
+        _enemyIndex = 0;
     }
+
 
     private static Creature GetEnemyTarget(ICombatState combatState)
     {
         var enemies = combatState.HittableEnemies;
-        if (enemies.Count == 0) return null;
-        if (enemies.Count == 1) return enemies[0];
+        if (enemies.Count == 0) 
+            return null;
+        if (enemies.Count == 1) 
+            return enemies[0];
 
-        // 集火优先：上次打过的目标还活着就继续打
         if (_focusTarget != null && enemies.Contains(_focusTarget) && _focusTarget.IsHittable)
-        {
-            if (ModConfig.DebugLog)
-                Plugin.Logger.Info($"[集火] 复用目标: {_focusTarget.Name} (HP:{_focusTarget.CurrentHp}/{_focusTarget.MaxHp})");
             return _focusTarget;
-        }
 
-        if (ModConfig.DebugLog)
-        {
-            var reason = _focusTarget == null ? "无集火目标" : !enemies.Contains(_focusTarget) ? "目标不在列表中" : !_focusTarget.IsHittable ? "目标已死" : "未知";
-            Plugin.Logger.Info($"[集火] 回退到最低血量 ({reason})");
-        }
-
-        // 兜底：血量最低
         return enemies.OrderBy(e => e.CurrentHp).First();
     }
 
@@ -78,9 +91,18 @@ public static class TargetSelector
             .Where(c => c.IsHittable && c != owner)
             .ToList();
 
-        if (allies.Count == 0) return null;
-        if (allies.Count == 1) return allies[0];
+        if (allies.Count == 0) 
+            return null;
+        
+        if (allies.Count == 1) 
+            return allies[0];
 
         return allies.OrderBy(a => a.CurrentHp).First();
     }
+
+    public static List<Creature> GetValidEnemies(ICombatState state)
+        => state.HittableEnemies.Where(e => e.IsHittable).ToList();
+
+    public static List<Creature> GetValidAllies(ICombatState state, Creature owner)
+        => state.PlayerCreatures.Where(c => c.IsHittable && c != owner).ToList();
 }
