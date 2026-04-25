@@ -9,7 +9,7 @@ public static class KeyboardEventRoomPatch
 {
     static void Postfix(NEventRoom __instance)
     {
-        var node = new EventHotkeyNode();
+        var node = new EventInputHandler();
         node.Init(__instance);
         __instance.AddChild(node);
     }

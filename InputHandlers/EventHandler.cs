@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 
 namespace KeyboardQuickPlay.Handlers;
 
-public partial class EventHotkeyNode : Node
+public partial class EventInputHandler : Node
 {
     private NEventRoom _room;
 
@@ -15,27 +15,36 @@ public partial class EventHotkeyNode : Node
         _room = room;
         ProcessMode = ProcessModeEnum.Always;
     }
-    public override void _UnhandledInput(InputEvent @event)
+public override void _UnhandledInput(InputEvent @event)
+{
+    if (!Helpers.IsTopScreen(_room))
+        return;
+
+    if (@event is not InputEventKey keyEvent)
+        return;
+
+    if (!keyEvent.Pressed || keyEvent.Echo)
+        return;
+
+    var options = GetOptions();
+    if (options.Count == 0)
+        return;
+
+    if (keyEvent.Keycode == Key.Space)
     {
-        if (!Helpers.IsTopScreen(_room))
+        if (options.Count == 1 || options[0].IsProceed)
+        {
+            Trigger(options[0], 0);
             return;
-
-        if (@event is not InputEventKey keyEvent)
-            return;
-
-        if (!keyEvent.Pressed || keyEvent.Echo)
-            return;
-
-        var options = GetOptions();
-        if (options.Count == 0)
-            return;
-
-        int index = Helpers.KeyToIndex(keyEvent.Keycode);
-        if (index < 0 || index >= options.Count)
-            return;
-
-        Trigger(options[index], index);
+        }
     }
+
+    int index = Helpers.KeyToIndex(keyEvent.Keycode);
+    if (index < 0 || index >= options.Count)
+        return;
+
+    Trigger(options[index], index);
+}
 
     #region Helpers
 
