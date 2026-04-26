@@ -1,24 +1,20 @@
 using Godot;
-using HarmonyLib;
-using MegaCrit.Sts2.Core.Events;
 using MegaCrit.Sts2.Core.Nodes.Events;
-using MegaCrit.Sts2.Core.Nodes.Rooms;
-using MegaCrit.Sts2.Core.Nodes.Screens.Overlays;
 
 namespace KeyboardQuickPlay.Handlers;
 
 public partial class EventInputHandler : Node
 {
-    private NEventRoom _room;
-    public void Init(NEventRoom room)
+    private NEventLayout _layout;
+    public void Init(NEventLayout layout)
     {
-        _room = room;
+        _layout = layout;
         ProcessMode = ProcessModeEnum.Always;
     }
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (!Helpers.IsTopScreen(_room))
-            return;
+        // if (!Helpers.IsTopScreen(_layout))
+        //     return;
 
         if (@event is not InputEventKey keyEvent)
             return;
@@ -26,7 +22,7 @@ public partial class EventInputHandler : Node
         if (!keyEvent.Pressed || keyEvent.Echo)
             return;
 
-        var options = _room.Layout.OptionButtons.ToList();
+        var options = _layout.OptionButtons.ToList();
         
         if (options.Count == 0)
             return;
