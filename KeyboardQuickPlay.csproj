@@ -1,4 +1,4 @@
-﻿<Project Sdk="Godot.NET.Sdk/4.5.1" InitialTargets="CheckDependencyPaths">
+﻿<Project Sdk="Godot.NET.Sdk/4.5.2" InitialTargets="CheckDependencyPaths">
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <Version>1.0.8</Version>
@@ -15,6 +15,15 @@
         <GodotDisabledSourceGenerators>GodotPluginsInitializer</GodotDisabledSourceGenerators>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <!-- Megadot current version is 4.5.1, and the game won't load your .pck if the Godot version used is newer. -->
+        <!-- MegaDot / Godot 4.5.1 mono executable used for export-pack when publishing -->
+        <GodotPath>D:\Dev Tools\Godot_v4.5.2-stable_mono_win64\Godot_v4.5.2-stable_mono_win64.exe</GodotPath>
+        <Sts2Path>C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2</Sts2Path>
+        <Sts2DataDir>$(Sts2Path)\data_sts2_windows_x86_64</Sts2DataDir>
+        <ModsPath>$(Sts2Path)/mods/</ModsPath>
+    </PropertyGroup>    
+    
     <!-- OS Detection -->
     <PropertyGroup>
         <IsWindows>false</IsWindows>
@@ -73,25 +82,25 @@
     </ItemGroup>
 
     <ItemGroup>
-        <AdditionalFiles Include="KeyboardQuickPlay\localization\**\*.json"/>
+        <AdditionalFiles Include="KeyboardQuickPlay\localization\**\*.json" />
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Remove="KeyboardQuickPlay\**"/>
-        <Compile Remove="materials\**"/>
-        <Compile Remove="shaders\**"/>
-        <Compile Remove="images\**"/>
-        <EmbeddedResource Remove="KeyboardQuickPlay\**"/>
-        <EmbeddedResource Remove="materials\**"/>
-        <EmbeddedResource Remove="shaders\**"/>
-        <EmbeddedResource Remove="images\**"/>
+        <Compile Remove="KeyboardQuickPlay\**" />
+        <Compile Remove="materials\**" />
+        <Compile Remove="shaders\**" />
+        <Compile Remove="images\**" />
+        <EmbeddedResource Remove="KeyboardQuickPlay\**" />
+        <EmbeddedResource Remove="materials\**" />
+        <EmbeddedResource Remove="shaders\**" />
+        <EmbeddedResource Remove="images\**" />
     </ItemGroup>
 
     <ItemGroup>
-        <None Include=".gitignore"/>
-        <None Include="mod_manifest.json"/>
-        <None Include="project.godot"/>
-        <None Include="KeyboardQuickPlay\**"/>
+        <None Include=".gitignore" />
+        <None Include="mod_manifest.json" />
+        <None Include="project.godot" />
+        <None Include="KeyboardQuickPlay\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -102,27 +111,21 @@
     </ItemGroup>
 
     <Target Name="CheckDependencyPaths">
-        <Error
-                Text=" Slay the Spire 2 data not found at path '$(Sts2DataDir)'"
-                Condition="'$(Sts2DataDir)' == '' or !Exists('$(Sts2DataDir)')"/>
-        <Error
-                Text=" Godot not found at path '$(GodotPath)'"
-                Condition="'$(GodotPath)' == '' or !Exists('$(GodotPath)')"/>
+        <Error Text=" Slay the Spire 2 data not found at path '$(Sts2DataDir)'" Condition="'$(Sts2DataDir)' == '' or !Exists('$(Sts2DataDir)')" />
+        <Error Text=" Godot not found at path '$(GodotPath)'" Condition="'$(GodotPath)' == '' or !Exists('$(GodotPath)')" />
     </Target>
 
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">
-        <Message Text="Copying .dll to mods folder." Importance="high"/>
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/"/>
+        <Message Text="Copying .dll to mods folder." Importance="high" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
     </Target>
 
     <Target Name="GodotPublish" AfterTargets="Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'">
-        <Message Text="Exporting Godot .pck to mods folder" Importance="high"/>
-        <Exec Command="&quot;$(GodotPath)&quot; --headless --export-pack &quot;Windows Desktop&quot; &quot;$(ModsPath)$(MSBuildProjectName)/$(MSBuildProjectName).pck&quot;"
-              EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1"
-              ContinueOnError="WarnAndContinue"/>
+        <Message Text="Exporting Godot .pck to mods folder" Importance="high" />
+        <Exec Command="&quot;$(GodotPath)&quot; --headless --export-pack &quot;Windows Desktop&quot; &quot;$(ModsPath)$(MSBuildProjectName)/$(MSBuildProjectName).pck&quot;" EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1" ContinueOnError="WarnAndContinue" />
     </Target>
 
     <Target Name="GodotPublishSkipped" AfterTargets="Publish" Condition="'$(GodotPath)' == '' or !Exists('$(GodotPath)')">
-        <Message Text="Skipping Godot .pck export because GodotPath is not configured." Importance="high"/>
+        <Message Text="Skipping Godot .pck export because GodotPath is not configured." Importance="high" />
     </Target>
 </Project>

@@ -6,6 +6,7 @@ packages/
 .git/
 .idea/
 .vs/
+.vscode/
 .claude/
 .serena/
 .template.config/
