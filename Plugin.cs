@@ -21,7 +21,6 @@ public static class Plugin
             Harmony harmony = new(ModId);
             harmony.PatchAll();
 
-            // 强制遍历确保 patch 生效（部分环境下 PatchAll 可能延迟绑定）
             var patched = harmony.GetPatchedMethods().ToList();
             Logger.Info($"Patch 挂载数量: {patched.Count}");
             foreach (var method in patched)

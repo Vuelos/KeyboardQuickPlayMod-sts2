@@ -22,7 +22,6 @@ public static class ModConfig
             if (_key.HasValue && keyEvent.Keycode == _key.Value)
                 return true;
 
-            // Fallback: 输入法可能导致 Keycode 为 None，用 PhysicalKeycode 兜底
             if (_key.HasValue && keyEvent.Keycode == Key.None && keyEvent.PhysicalKeycode == _key.Value)
                 return true;
         }
@@ -32,10 +31,7 @@ public static class ModConfig
 
         return false;
     }
-
-    /// <summary>
-    /// 轮询物理按键状态（不依赖事件流，解决跨回合 echo 中断问题）
-    /// </summary>
+    
     public static bool IsHeld()
     {
         if (_key.HasValue && Input.IsKeyPressed(_key.Value))

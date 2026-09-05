@@ -33,9 +33,7 @@ public partial class MapScreenHandler : Node
         if (!_screen.IsTravelEnabled)
             return;
 
-        var mapDict = Traverse.Create(_screen)
-            .Field<Dictionary<MapCoord, NMapPoint>>("_mapPointDictionary")
-            .Value;
+        var mapDict = _screen._mapPointDictionary;
 
         if (mapDict == null || mapDict.Count == 0)
             return;
