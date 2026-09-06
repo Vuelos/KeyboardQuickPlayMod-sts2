@@ -7,7 +7,7 @@ namespace KeyboardQuickPlay;
 [ModInitializer(nameof(Initialize))]
 public static class Plugin
 {
-    private const string ModId = "Mhz.keyboardquickplay";
+    private const string ModId = "KeyboardQuickPlay";
 
     public static MegaCrit.Sts2.Core.Logging.Logger Logger { get; } =
         new(ModId, MegaCrit.Sts2.Core.Logging.LogType.Generic);

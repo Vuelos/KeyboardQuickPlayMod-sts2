@@ -13,9 +13,6 @@ public partial class EventInputHandler : Node
     }
     public override void _UnhandledInput(InputEvent @event)
     {
-        // if (!Helpers.IsTopScreen(_layout))
-        //     return;
-
         if (@event is not InputEventKey keyEvent)
             return;
 

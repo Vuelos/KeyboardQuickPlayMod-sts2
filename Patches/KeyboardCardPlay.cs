@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Potions;
 using KeyboardQuickPlay.Handlers;
 
 namespace KeyboardQuickPlay.Patches;
@@ -13,8 +14,17 @@ public static class KeyboardCardPlayPatch
 {
     static void Postfix(NMouseCardPlay __instance, InputEvent inputEvent)
     {
+        if (inputEvent is InputEventKey keyEvent)
+        {
+            if (keyEvent.CtrlPressed || keyEvent.MetaPressed)
+                return;
+
+            if (IsPotionPopupOpen(__instance))
+                return;
+        }
+
         // Handle C key for cycling enemy target
-        if (inputEvent is InputEventKey keyEvent && keyEvent.Pressed && keyEvent.Keycode == Key.C)
+        if (inputEvent is InputEventKey keyEvent2 && keyEvent2.Pressed && keyEvent2.Keycode == Key.C)
         {
             var card = __instance.Card;
             var state = card?.CombatState;
@@ -65,6 +75,32 @@ public static class KeyboardCardPlayPatch
 
         cardPlay.TryPlayCard(target);
         return true;
+    }
+
+    private static bool IsPotionPopupOpen(Node node)
+    {
+        if (node == null || node.GetTree() == null)
+            return false;
+
+        var root = node.GetTree().Root;
+        if (root == null)
+            return false;
+
+        return FindVisiblePotionPopup(root);
+    }
+
+    private static bool FindVisiblePotionPopup(Node node)
+    {
+        if (node is NPotionPopup popup && popup.Visible)
+            return true;
+
+        foreach (var child in node.GetChildren(false))
+        {
+            if (FindVisiblePotionPopup(child))
+                return true;
+        }
+
+        return false;
     }
 }
 
