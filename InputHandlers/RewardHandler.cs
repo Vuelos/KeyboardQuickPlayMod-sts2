@@ -42,9 +42,10 @@ public partial class RewardHandler : Node
 
     private List<NRewardButton> GetRewardButtons()
         => _screen._rewardButtons.OfType<NRewardButton>().ToList();
-
+        
     private static void Trigger(NRewardButton button)
     {
-        button.ForceClick();
+        button.Call(NRewardButton.MethodName.OnPress);
+        button.Call(NRewardButton.MethodName.OnRelease);
     }
 }
