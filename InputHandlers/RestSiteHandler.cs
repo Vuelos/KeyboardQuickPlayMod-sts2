@@ -1,8 +1,6 @@
 using Godot;
-using HarmonyLib;
-using System;
+using System.Linq;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
-using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
 
 namespace KeyboardQuickPlay.Handlers;
@@ -10,6 +8,10 @@ namespace KeyboardQuickPlay.Handlers;
 public partial class RestSiteHandler : Node
 {
     private NRestSiteRoom _room;
+
+    public RestSiteHandler()
+    {
+    }
 
     public void Init(NRestSiteRoom room)
     {
@@ -22,48 +24,74 @@ public partial class RestSiteHandler : Node
         if (!Helpers.IsTopScreen(_room))
             return;
 
-        if (@event is not InputEventKey keyEvent)
+        if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo)
             return;
 
-        if (!keyEvent.Pressed || keyEvent.Echo)
+        if (keyEvent.Keycode == Key.Space && !ModConfig.IsMatch(@event) && !ModConfig.IsHeld())
             return;
 
-        if (keyEvent.Keycode == Key.Space)
+        HandleInput(keyEvent);
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (!Helpers.IsTopScreen(_room))
+            return;
+
+        if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo)
+            return;
+
+        if (keyEvent.Keycode == Key.Space && !ModConfig.IsMatch(@event) && !ModConfig.IsHeld())
+            return;
+
+        HandleInput(keyEvent);
+        GetViewport()?.SetInputAsHandled();
+    }
+
+    private void HandleInput(InputEventKey keyEvent)
+    {
+        if (keyEvent.Keycode == Key.Space || keyEvent.Keycode == Key.E)
         {
-            var proceed = _room.ProceedButton;
-
-            if (proceed == null)
-                return;
-
-            if (proceed.IsEnabled)
-            {
-                var method = AccessTools.Method(typeof(NRestSiteRoom), "OnProceedButtonReleased");
-                method?.Invoke(_room, new object[] { null });
-            }
-
+            TryProceed();
             return;
         }
 
-        // Number keys → options
         int index = Helpers.KeyToIndex(keyEvent.Keycode);
-
         if (index < 0)
             return;
 
+        SelectOption(index);
+    }
+
+    private void TryProceed()
+    {
+        var proceed = _room.ProceedButton;
+
+        if (proceed == null || !proceed.IsEnabled)
+            return;
+
+        proceed.Call("GrabFocus");
+        proceed.EmitSignal("pressed");
+    }
+
+    private void SelectOption(int index)
+    {
         var options = _room.Options;
 
-        if (options == null) 
+        if (options == null || index >= options.Count)
             return;
 
-        if (index >= options.Count) 
+        var children = _room._choicesContainer.GetChildren(false);
+
+        var buttons = children
+            .OfType<NRestSiteButton>()
+            .Where(b => b.Visible)
+            .ToList();
+
+        if (index >= buttons.Count)
             return;
 
-        var buttons = _room._choicesContainer.GetChildren(false).OfType<NRestSiteButton>().Where(b => b.Visible);
-
-        if (buttons.Count() < index) 
-            return;
-
-        var selectedButton = buttons.ElementAt(index);
+        var selectedButton = buttons[index];
 
         if (!selectedButton.IsEnabled)
             return;

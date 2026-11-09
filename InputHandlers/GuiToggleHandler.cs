@@ -10,7 +10,15 @@ public partial class GuiToggleHandler : Node
 {
     private Node _node;
     private IScreenContext _screenContext;
-    private bool _hidden;
+
+    // Shared across handlers so the hidden state and the nodes we hid survive
+    // room transitions. Each battle gets a fresh handler, but the top bar and
+    // relic inventory live in GlobalUi and stay hidden unless we keep tracking
+    // them here.
+    private static bool _hidden;
+    private static readonly Dictionary<Node, bool> _visibilityStates = new();
+    private static readonly Dictionary<Type, bool> _typeMatchCache = new();
+    private static ulong _lastSweepFrame = ulong.MaxValue;
 
     public void Init(Node node)
     {
@@ -18,6 +26,36 @@ public partial class GuiToggleHandler : Node
         _screenContext = node as IScreenContext;
         ProcessMode = ProcessModeEnum.Always;
         GD.Print("[GuiToggle] Handler initialized on " + node.GetType().FullName);
+
+        // If the UI was hidden in a previous room/battle, hide anything new in
+        // this screen too so the state stays consistent.
+        if (_hidden)
+            Callable.From(ReapplyHiddenState).CallDeferred();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (!_hidden || !GodotObject.IsInstanceValid(_node) || !_node.IsInsideTree())
+            return;
+
+        // Some elements (e.g. the exhaust pile button) are shown by the game
+        // mid-combat. Keep enforcing the hidden state so they cannot pop back.
+        var frame = Engine.GetProcessFrames();
+        if (frame == _lastSweepFrame)
+            return;
+        _lastSweepFrame = frame;
+
+        var root = _node.GetTree()?.Root;
+        if (root != null)
+            HideMatchingNodes(root);
+    }
+
+    private void ReapplyHiddenState()
+    {
+        if (!_hidden)
+            return;
+
+        HideElements(reset: false);
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -65,14 +103,14 @@ public partial class GuiToggleHandler : Node
         _hidden = !_hidden;
 
         if (_hidden)
-            HideElements();
+            HideElements(reset: true);
         else
             ShowElements();
 
         GD.Print($"[GuiToggle] Hidden: {_hidden}");
     }
 
-    private void HideElements()
+    private void HideElements(bool reset)
     {
         var root = _node.GetTree()?.Root;
         if (root == null)
@@ -82,24 +120,34 @@ public partial class GuiToggleHandler : Node
         }
 
         GD.Print("[GuiToggle] Searching for UI elements to hide...");
+        if (reset)
+            _visibilityStates.Clear();
         HideMatchingNodes(root);
-
-        GD.Print("[GuiToggle] Hide complete");
+        GD.Print($"[GuiToggle] Hide complete ({_visibilityStates.Count} nodes hidden)");
     }
 
     private void ShowElements()
     {
-        var root = _node.GetTree()?.Root;
-        if (root == null)
+        GD.Print("[GuiToggle] Restoring UI elements...");
+        int restored = 0;
+
+        foreach (var (node, wasVisible) in _visibilityStates)
         {
-            GD.PrintErr("[GuiToggle] Tree root is null");
-            return;
+            if (!GodotObject.IsInstanceValid(node))
+                continue;
+
+            if (node is CanvasItem canvasItem)
+            {
+                // Restore only what this mod hid, preserving the game's own
+                // visibility and layout state for everything else.
+                canvasItem.Visible = wasVisible;
+                restored++;
+                GD.Print($"[GuiToggle]   Shown: {node.GetType().FullName}");
+            }
         }
 
-        GD.Print("[GuiToggle] Searching for UI elements to show...");
-        ShowMatchingNodes(root);
-
-        GD.Print("[GuiToggle] Show complete");
+        _visibilityStates.Clear();
+        GD.Print($"[GuiToggle] Show complete ({restored} nodes restored)");
     }
 
     private void HideMatchingNodes(Node node)
@@ -108,9 +156,11 @@ public partial class GuiToggleHandler : Node
         {
             if (node is CanvasItem canvasItem && canvasItem.Visible)
             {
+                _visibilityStates[node] = true;
                 canvasItem.Visible = false;
                 GD.Print($"[GuiToggle]   Hidden: {node.GetType().FullName}");
             }
+            return;
         }
 
         foreach (var child in node.GetChildren(false))
@@ -119,71 +169,45 @@ public partial class GuiToggleHandler : Node
         }
     }
 
-    private void ShowMatchingNodes(Node node)
-    {
-        if (ShouldHide(node))
-        {
-            if (node is CanvasItem canvasItem && !canvasItem.Visible)
-            {
-                canvasItem.Visible = true;
-                GD.Print($"[GuiToggle]   Shown: {node.GetType().FullName}");
-            }
-        }
-
-        foreach (var child in node.GetChildren(false))
-        {
-            ShowMatchingNodes(child);
-        }
-    }
-
     private bool ShouldHide(Node node)
     {
-        var typeName = node.GetType().FullName.ToString();
-        var name = node.Name.ToString();
+        var type = node.GetType();
+        if (!_typeMatchCache.TryGetValue(type, out var hideByType))
+        {
+            var typeName = type.FullName ?? type.Name;
 
-        if (typeName.Contains("NRelic") || typeName.Contains("Relic"))
+            hideByType =
+                typeName.Contains("NRelic") || typeName.Contains("Relic") ||
+                typeName.Contains("NExhaust") || typeName.Contains("Exhaust") ||
+                typeName.Contains("NDiscard") || typeName.Contains("Discard") ||
+                typeName.Contains("NDraw") ||
+                typeName.Contains("NPeek") || typeName.Contains("Peek") ||
+                typeName.Contains("NPing") || typeName.Contains("Ping") ||
+                typeName.Contains("NEndTurn") || typeName.Contains("EndTurn") ||
+                typeName.Contains("NPlayerTurnBanner") || typeName.Contains("NEnemyTurnBanner") ||
+                typeName.Contains("NCombatStartBanner") ||
+                typeName.Contains("NTopBar") ||
+                typeName.Contains("NEnergyCounter") ||
+                typeName.Contains("NProfile") ||
+                typeName.Contains("NLogo");
+
+            _typeMatchCache[type] = hideByType;
+        }
+
+        if (hideByType)
             return true;
 
-        if (typeName.Contains("NExhaust") || typeName.Contains("Exhaust"))
+        var name = node.Name;
+
+        if (name == "TopBar" || name == "Profile" || name == "Logo")
             return true;
 
-        if (typeName.Contains("NDiscard") || typeName.Contains("Discard"))
+        if (name == "DebugInfo" || name == "ReleaseInfo" || name == "ModdedWarning" || name == "DebugSeed")
             return true;
 
-        if (typeName.Contains("NDraw") || typeName.Contains("Draw"))
-            return true;
-
-        if (typeName.Contains("NPeek") || typeName.Contains("Peek"))
-            return true;
-
-        if (typeName.Contains("NPing") || typeName.Contains("Ping"))
-            return true;
-
-        if (typeName.Contains("NEndTurn") || typeName.Contains("EndTurn"))
-            return true;
-
-        if (typeName.Contains("NPlayerTurnBanner") || typeName.Contains("NEnemyTurnBanner") || typeName.Contains("NCombatStartBanner"))
-            return true;
-
-        if (typeName.Contains("NTopBar") || name == "TopBar")
-            return true;
-
-        if (typeName.Contains("NEnergyCounter"))
-            return true;
-
-        if (typeName.Contains("NProfile") || name == "Profile")
-            return true;
-
-        if (typeName.Contains("NLogo") || name == "Logo")
-            return true;
-
-        if (name == "Version" || name.Contains("Version"))
-            return true;
-
-        if (name.Contains("ModList"))
-            return true;
-
-        if (name == "Party" || name.Contains("party") || name.Contains("Party"))
+        // These are the only checks that need substring matching.
+        var nameText = name.ToString();
+        if (nameText.Contains("ModList") || nameText.Contains("party") || nameText.Contains("Party"))
             return true;
 
         return false;

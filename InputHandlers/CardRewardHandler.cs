@@ -1,16 +1,15 @@
 using Godot;
-using HarmonyLib;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
+using HarmonyLib;
 
 namespace KeyboardQuickPlay.Handlers;
 
 public partial class CardRewardHandler : Node
 {
     private readonly NCardRewardSelectionScreen _screen;
-
     private Control _cardRow;
 
     public CardRewardHandler(NCardRewardSelectionScreen screen)
@@ -21,13 +20,8 @@ public partial class CardRewardHandler : Node
 
     public override void _Ready()
     {
-        GD.Print("[CardInput] Ready");
-
-        SetProcessInput(true);
-
         var field = AccessTools.Field(typeof(NCardRewardSelectionScreen), "_cardRow");
         _cardRow = (Control)field?.GetValue(_screen);
-
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -35,9 +29,6 @@ public partial class CardRewardHandler : Node
         if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo)
             return;
 
-        GD.Print($"[CardInput] Key: {keyEvent.Keycode}");
-
-        // SPACE = skip
         if (keyEvent.Keycode == Key.Space)
         {
             TriggerSkip();
@@ -52,11 +43,8 @@ public partial class CardRewardHandler : Node
             return;
 
         var cards = GetCards();
-
         if (index >= cards.Count)
             return;
-
-        GD.Print($"[CardInput] Selecting card {index}");
 
         cards[index].EmitSignal(NCardHolder.SignalName.Pressed, cards[index]);
     }
@@ -64,19 +52,11 @@ public partial class CardRewardHandler : Node
     private List<NGridCardHolder> GetCards()
     {
         if (_cardRow == null)
-        {
             return new List<NGridCardHolder>();
-        }
 
-        var children = _cardRow.GetChildren();
-
-        var cards = children
+        return _cardRow.GetChildren()
             .OfType<NGridCardHolder>()
             .ToList();
-
-        GD.Print($"[CardInput] Filtered card holders: {cards.Count}");
-
-        return cards;
     }
 
     public override void _Input(InputEvent @event)
@@ -99,62 +79,53 @@ public partial class CardRewardHandler : Node
             return;
 
         var cards = GetCards();
-
         if (index >= cards.Count)
             return;
 
-        GD.Print($"[CardInput] _Input selecting card {index}");
         cards[index].EmitSignal(NCardHolder.SignalName.Pressed, cards[index]);
         GetViewport()?.SetInputAsHandled();
     }
 
-private void TriggerSkip()
-{
-    var altContainerField = AccessTools.Field(
-        typeof(NCardRewardSelectionScreen),
-        "_rewardAlternativesContainer"
-    );
-
-    var altContainer = altContainerField?.GetValue(_screen) as Control;
-
-    if (altContainer != null)
+    private void TriggerSkip()
     {
-        var altButtons = altContainer
-            .GetChildren(false)
-            .OfType<NCardRewardAlternativeButton>()
-            .Where(b => b.Visible && b.IsEnabled)
-            .ToList();
+        var altContainerField = AccessTools.Field(
+            typeof(NCardRewardSelectionScreen),
+            "_rewardAlternativesContainer"
+        );
 
-        if (altButtons.Count > 0)
+        var altContainer = altContainerField?.GetValue(_screen) as Control;
+
+        if (altContainer != null)
         {
-            foreach (var button in altButtons)
+            var altButtons = altContainer
+                .GetChildren(false)
+                .OfType<NCardRewardAlternativeButton>()
+                .Where(b => b.Visible && b.IsEnabled)
+                .ToList();
+
+            if (altButtons.Count > 0)
             {
-                GD.Print($"[CardInput] Clicking alternative button: {button.GetType().Name}");
-                button.GrabFocus();
-                button.EmitSignal(NClickableControl.SignalName.Released, button);
+                foreach (var button in altButtons)
+                {
+                    button.GrabFocus();
+                    button.EmitSignal(NClickableControl.SignalName.Released, button);
+                }
+                return;
             }
-
-            return;
         }
+
+        var skipField = AccessTools.Field(
+            typeof(NCardRewardSelectionScreen),
+            "_skipButton"
+        );
+
+        var button2 = skipField?.GetValue(_screen) as NChoiceSelectionSkipButton;
+        if (button2 == null)
+            return;
+
+        button2.GrabFocus();
+        button2.EmitSignal(NClickableControl.SignalName.Released, button2);
     }
-
-    var skipField = AccessTools.Field(
-        typeof(NCardRewardSelectionScreen),
-        "_skipButton"
-    );
-
-    var button2 = skipField?.GetValue(_screen) as NChoiceSelectionSkipButton;
-
-    if (button2 == null)
-    {
-        GD.PrintErr("[CardInput] Skip button not found");
-        return;
-    }
-
-    GD.Print("[CardInput] Calling skip button pressed");
-    button2.GrabFocus();
-    button2.EmitSignal(NClickableControl.SignalName.Released, button2);
-}
 
     private static void Trigger(NCardRewardAlternativeButton button)
     {

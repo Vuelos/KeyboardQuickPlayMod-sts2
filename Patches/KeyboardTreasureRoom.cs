@@ -1,3 +1,4 @@
+using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using KeyboardQuickPlay.Handlers;
@@ -9,7 +10,21 @@ public static class TreasureRoomPatch
 {
     static void Postfix(NTreasureRoom __instance)
     {
-        var handler = new TreasureRoomHandler(__instance);
-        __instance.AddChild(handler);
+        if (!__instance.IsInsideTree())
+        {
+            return;
+        }
+
+        if (__instance.GetNodeOrNull<TreasureRoomHandler>("TreasureRoomHotkeyNode") != null)
+        {
+            return;
+        }
+
+        var handler = new TreasureRoomHandler(__instance)
+        {
+            Name = "TreasureRoomHotkeyNode"
+        };
+
+        __instance.AddChild(handler);    
     }
 }
